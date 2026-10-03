@@ -1,0 +1,45 @@
+name: Deploy To-Do List
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to AWS EC2
+        env:
+          EC2_SSH_KEY_B64: ${{ secrets.EC2_SSH_KEY_B64 }}
+        run: |
+          echo "$EC2_SSH_KEY_B64" | base64 -d > todo_list_key.pem
+          chmod 600 todo_list_key.pem
+
+          ssh -o StrictHostKeyChecking=no -i todo_list_key.pem ec2-user@YOUR_TODO_EC2_IP "cd ~/to_do_list && git pull origin main && docker stop to_do_list || true; docker rm to_do_list || true; docker build -t to_do_list . && docker run -d --restart unless-stopped -p 80:80 --name to_do_list to_do_list"
+
+          rm -f todo_list_key.pem
+
+      - name: Record deployment in Deployment Insights
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            STATUS="Success"
+          else
+            STATUS="Failed"
+          fi
+
+          curl -X POST "${{ secrets.DEPLOYMENT_INSIGHTS_URL }}/api/deployments" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"project\": \"To-Do List\",
+              \"version\": \"${{ github.sha }}\",
+              \"status\": \"$STATUS\",
+              \"deployedBy\": \"${{ github.actor }}\",
+              \"commit\": \"${{ github.sha }}\",
+              \"branch\": \"${{ github.ref_name }}\"
+            }" || true

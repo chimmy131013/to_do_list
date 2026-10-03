@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>To-Do List</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- Navigation -->
+        <nav>
+            <div class="logo">📝 To-Do List</div>
+
+            <div class="nav-links">
+                <a href="index.html" class="active">Tasks</a>
+                <a href="calendar.html">📅 Calendar</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main>
+
+            <div class="heading">
+                <div>
+                    <h1>My Tasks</h1>
+                    <p>Manage your daily tasks easily.</p>
+                </div>
+
+                <span class="dashboard-badge">
+                    ✓ Available in Dashboard Insights
+                </span>
+            </div>
+
+            <!-- Add Task -->
+            <form id="taskForm" class="input-box">
+
+                <input
+                    type="text"
+                    id="taskInput"
+                    placeholder="Enter a task..."
+                    autocomplete="off"
+                    required
+                >
+
+                <button type="submit">Add Task</button>
+
+            </form>
+
+            <!-- Task Summary -->
+            <div class="summary">
+
+                <div class="summary-box">
+                    <span id="totalTasks">0</span>
+                    <p>Total Tasks</p>
+                </div>
+
+                <div class="summary-box">
+                    <span id="completedTasks">0</span>
+                    <p>Completed</p>
+                </div>
+
+                <div class="summary-box">
+                    <span id="pendingTasks">0</span>
+                    <p>Pending</p>
+                </div>
+
+            </div>
+
+            <!-- Task List -->
+            <div class="task-section">
+
+                <h2>My Tasks</h2>
+
+                <ul id="taskList"></ul>
+
+                <p id="emptyMessage" class="empty-message">
+                    No tasks yet. Add your first task!
+                </p>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
