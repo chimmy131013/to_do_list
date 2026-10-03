@@ -20,7 +20,26 @@ jobs:
           echo "$EC2_SSH_KEY_B64" | base64 -d > todo_list_key.pem
           chmod 600 todo_list_key.pem
 
-          ssh -o StrictHostKeyChecking=no -i todo_list_key.pem ec2-user@YOUR_TODO_EC2_IP "cd ~/to_do_list && git pull origin main && docker stop to_do_list || true; docker rm to_do_list || true; docker build -t to_do_list . && docker run -d --restart unless-stopped -p 80:80 --name to_do_list to_do_list"
+          ssh -o StrictHostKeyChecking=no \
+            -i todo_list_key.pem \
+            ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
+
+            cd ~/to_do_list
+
+            git pull origin main
+
+            docker stop to_do_list || true
+            docker rm to_do_list || true
+
+            docker build -t to_do_list .
+
+            docker run -d \
+              --restart unless-stopped \
+              -p 80:80 \
+              --name to_do_list \
+              to_do_list
+
+          EOF
 
           rm -f todo_list_key.pem
 
