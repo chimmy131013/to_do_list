@@ -10,9 +10,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+      # 1. Checkout latest code
       - name: Checkout repository
         uses: actions/checkout@v4
 
+
+      # 2. Start deployment timer
+      - name: Start deployment timer
+        run: |
+          echo "DEPLOY_START=$(date +%s)" >> $GITHUB_ENV
+
+
+      # 3. Deploy application to AWS EC2
       - name: Deploy to AWS EC2
         env:
           EC2_SSH_KEY_B64: ${{ secrets.EC2_SSH_KEY_B64 }}
@@ -43,22 +53,55 @@ jobs:
 
           rm -f todo_list_key.pem
 
+
+      # 4. Verify deployment
+      - name: Verify deployment
+        run: |
+          sleep 10
+
+          curl -f http://${{ secrets.EC2_HOST }}/ || exit 1
+
+
+      # 5. Automatically record deployment in Deployment Insights
       - name: Record deployment in Deployment Insights
         if: always()
+        env:
+          DEPLOYMENT_INSIGHTS_URL: ${{ secrets.DEPLOYMENT_INSIGHTS_URL }}
         run: |
+
+          END_TIME=$(date +%s)
+
+          if [ -n "$DEPLOY_START" ]; then
+            DURATION=$((END_TIME - DEPLOY_START))
+          else
+            DURATION=0
+          fi
+
           if [ "${{ job.status }}" = "success" ]; then
             STATUS="Success"
           else
             STATUS="Failed"
           fi
 
-          curl -X POST "${{ secrets.DEPLOYMENT_INSIGHTS_URL }}/api/deployments" \
+          echo "Deployment Status: $STATUS"
+          echo "Deployment Duration: ${DURATION}s"
+
+          curl -X POST "$DEPLOYMENT_INSIGHTS_URL/api/deployments" \
             -H "Content-Type: application/json" \
             -d "{
               \"project\": \"To-Do List\",
               \"version\": \"${{ github.sha }}\",
               \"status\": \"$STATUS\",
+              \"environment\": \"Production\",
               \"deployedBy\": \"${{ github.actor }}\",
               \"commit\": \"${{ github.sha }}\",
-              \"branch\": \"${{ github.ref_name }}\"
-            }" || true
+              \"branch\": \"${{ github.ref_name }}\",
+              \"duration\": \"${DURATION}s\"
+            }"
+
+
+      # 6. Clean up SSH key
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f todo_list_key.pem
